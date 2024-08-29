@@ -1,0 +1,59 @@
+// Define the PIR sensor pin
+const int pirPin = 3;
+
+// Optional LED and Buzzer pins
+const int ledPin = 13;
+const int buzzerPin = 12;
+
+// Variable to store the PIR sensor state
+int pirState = LOW;
+
+// Counter for the number of people detected
+int peopleCount = 0;
+
+void setup() {
+  // Set up the PIR sensor pin as input
+  pinMode(pirPin, INPUT);
+  
+  // Set up the LED and Buzzer as outputs (optional)
+  pinMode(ledPin, OUTPUT);
+  pinMode(buzzerPin, OUTPUT);
+
+  // Start serial communication for debugging
+  Serial.begin(19200);
+
+  // Print an initial message to the serial monitor
+  Serial.println("People Counter Initialized");
+}
+
+void loop() {
+  // Read the PIR sensor input
+  int pirValue = digitalRead(pirPin);
+
+  // If motion is detected
+  if (pirValue == HIGH) {
+    if (pirState == LOW) {
+      // Motion detected for the first time
+      peopleCount++;
+      Serial.print("Person detected! Total count: ");
+      Serial.println(peopleCount);
+
+      // Turn on LED and Buzzer (optional)
+      digitalWrite(ledPin, HIGH);
+      digitalWrite(buzzerPin, HIGH);
+
+      // Delay to debounce and avoid multiple counts for one person
+      delay(1000);
+
+      // Update PIR sensor state
+      pirState = HIGH;
+    }
+  } else {
+    if (pirState == HIGH) {
+      // Reset PIR sensor state when motion stops
+      digitalWrite(ledPin, LOW);
+      digitalWrite(buzzerPin, LOW);
+      pirState = LOW;
+    }
+  }
+}
