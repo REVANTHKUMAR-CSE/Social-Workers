@@ -1,81 +1,52 @@
-//Tech Trends Shameer
-//Visitor Counter
+#include <SPI.h>
+#include <MFRC522.h>
 
-#include <Wire.h>
-#include <LiquidCrystal.h>
-#define trigPin 13 //Sensor Echo pin connected to Arduino pin 13
-#define echoPin 12 //Sensor Trip pin connected to Arduino pin 12
-//Create Liquid Crystal Object called LCD
-LiquidCrystal lcd(11, 10, 5, 4, 3, 2);
-int counter = 0;
-int currentState1 = 0;
-int previousState1 = 0;
-int currentState2 = 0;
-int previousState2 = 0;
-int inside = 0;
-int outside = 0;
+#define SS_PIN 10  // SDA pin on RFID
+#define RST_PIN 9  // RST pin on RFID
+MFRC522 mfrc522(SS_PIN, RST_PIN); // Create MFRC522 instance
 
-void setup()
+void setup() 
 {
-// Initialize the LCD
-lcd.begin(16,2); //Tell Arduino to start your 16 column 2 row LCD
-//Serial.begin (9600);
-pinMode(trigPin, OUTPUT);
-pinMode(echoPin, INPUT);
+  Serial.begin(9600);  // Initialize serial communication at 9600 bps
+  SPI.begin();         // Initiate SPI bus
+  mfrc522.PCD_Init();  // Initialize MFRC522 RFID module
+  Serial.println("Place your RFID card near the reader..");
+  Serial.println();
 }
 
-void loop()
-{
-lcd.setCursor(0, 0); //Set cursor to first column of first row
-lcd.print("IN: ");
-lcd.setCursor(8, 0);
-lcd.print("OUT: ");
-lcd.setCursor(0, 1);  //Set cursor to first column of second row
-lcd.print("Total Inside: ");
-long duration, distance;
-digitalWrite(trigPin, LOW); 
-delayMicroseconds(2); 
-digitalWrite(trigPin, HIGH);
-delayMicroseconds(10); 
-digitalWrite(trigPin, LOW);
-duration = pulseIn(echoPin, HIGH);
-distance = (duration/2) / 29.1;
-if (distance <= 7){
-currentState1 = 1;
-}
-else {
-currentState1 = 0;
-}
-delay(100);
-if(currentState1 != previousState1){
-if(currentState1 == 1){
-counter = counter + 1;}
-lcd.setCursor(14, 1);
-lcd.print(counter);
-inside = inside +1;}
-lcd.setCursor(4, 0);
-lcd.print(inside);
-if (distance > 7 && distance <= 14){
-currentState2 = 1;
-}
-else {
-currentState2 = 0;
-}
-delay(100);
-if(currentState2 != previousState2){
-if(currentState2 == 1){
-counter = counter - 1;}
-lcd.setCursor(14, 1);
-lcd.print(counter);
-outside = outside +1;}
-lcd.setCursor(13, 0);
-lcd.print(outside);
-lcd.setCursor(14, 1);
-lcd.print(counter);
-if (counter > 9 || counter < 0){
-lcd.setCursor(14, 1);
-lcd.print(counter);
-delay(100);
-lcd.clear();
- }
+void loop() {
+  // Look for new RFID cards
+  if 
+  ( ! mfrc522.PICC_IsNewCardPresent()) {
+    return ;
+  }
+
+  // Select one of the cards
+  if ( ! mfrc522.PICC_ReadCardSerial()) {
+    return ;
+  }
+
+  // Print UID of the card to the serial monitor
+  Serial.print("Card UID: ");
+  String content = "";
+  for (byte i = 0; i < mfrc522.uid.size; i++) {
+    Serial.print(mfrc522.uid.uidByte[i] < 0x10 ? " 0" : " ");
+    Serial.print(mfrc522.uid.uidByte[i], HEX);
+    content.concat(String(mfrc522.uid.uidByte[i] < 0x10 ? " 0" : " "));
+    content.concat(String(mfrc522.uid.uidByte[i], HEX));
+  }
+  Serial.println();
+  Serial.print("Message: ");
+  
+  // Check the UID against known values (example)
+  if (content == "0015678919") 
+  {
+    Serial.println("Access Granted");
+  } 
+  else 
+  {
+    Serial.println("Access Denied");
+  }
+  Serial.println();
+  delay(2000); // Delay to avoid multiple scans
 }
