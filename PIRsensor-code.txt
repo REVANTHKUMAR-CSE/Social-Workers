@@ -1,31 +1,90 @@
-const int pirPin = 3;
-int pirState = LOW;
-int peopleCount = 0;
+const int pirPinIn = 2;  // Entrance PIR sensor pin
+const int pirPinOut = 3; // Exit PIR sensor pin
+
+// Variable to store the PIR sensor states
+int pirStateIn = LOW;
+int pirStateOut = LOW;
+
+// Counter for the number of people inside
+int peopleInside = 0;
+int totalEntered = 0;
+int totalExited = 0;
+
+// Timer variables for periodic reporting
+unsigned long lastReportTime = 0;
+const unsigned long reportInterval = 5000; // 5 seconds
+
 void setup() {
-  pinMode(pirPin, INPUT);
+  // Set up the PIR sensor pins as input
+  pinMode(pirPinIn, INPUT);
+  pinMode(pirPinOut, INPUT);
+
+  // Start serial communication for debugging
   Serial.begin(9600);
+
+  // Print an initial message to the serial monitor
   Serial.println("People Counter Initialized");
 }
+
 void loop() {
-  int pirValue = digitalRead(pirPin);
-  if (pirValue == HIGH)
-  {
-    if (pirState == LOW) 
-    {
-      peopleCount++;
-      Serial.print("Person went in! Total count: ");
-      Serial.println(peopleCount);
+  // Read the PIR sensor inputs
+  int pirValueIn = digitalRead(pirPinIn);
+  int pirValueOut = digitalRead(pirPinOut);
+
+  // If motion is detected at the entrance
+  if (pirValueIn == HIGH) {
+    if (pirStateIn == LOW) {
+      // Person entering
+      peopleInside++;
+      totalEntered++;
+      Serial.print("Person entered! Total inside: ");
+      Serial.println(peopleInside);
+
+      // Delay to debounce and avoid multiple counts for one person
       delay(1000);
-      pirState = HIGH;
+
+      // Update PIR sensor state
+      pirStateIn = HIGH;
+    }
+  } else {
+    if (pirStateIn == HIGH) {
+      // Reset PIR sensor state when motion stops
+      pirStateIn = LOW;
     }
   }
-  else 
-  {
-    if (pirState == HIGH) 
-    {
-      digitalWrite(ledPin, LOW);
-      digitalWrite(buzzerPin, LOW);
-      pirState = LOW;
+
+  // If motion is detected at the exit
+  if (pirValueOut == HIGH) {
+    if (pirStateOut == LOW) {
+      // Person exiting
+      if (peopleInside > 0) {
+        peopleInside--;
+        totalExited++;
+        Serial.print("Person exited! Total inside: ");
+        Serial.println(peopleInside);
+      } else {
+        Serial.println("No one inside to exit!");
+      }
+
+      // Delay to debounce and avoid multiple counts for one person
+      delay(1000);
+
+      // Update PIR sensor state
+      pirStateOut = HIGH;
     }
+  } else {
+    if (pirStateOut == HIGH) {
+      // Reset PIR sensor state when motion stops
+      pirStateOut = LOW;
+    }
+  }
+
+  // Periodic reporting
+  if (millis() - lastReportTime >= reportInterval) {
+    Serial.print("Total entered: ");
+    Serial.print(totalEntered);
+    Serial.print(", Total exited: ");
+    Serial.println(totalExited);
+    lastReportTime = millis();
   }
 }
